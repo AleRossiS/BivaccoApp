@@ -100,9 +100,13 @@
   </div>
   
   <script>
-        // ---- Chart history ----
+    // ---- Chart history ----
     const N_POINTS = 60;     // points kept: 60 x 2 s = 2 minutes
     const history = [];      // last N_POINTS power values [mW]
+
+    // ---- BLE contract (must match config.h on the ESP32) ----
+    const SERVICE_UUID = '995e0001-c4d9-4154-8b60-ab9747017a4f';
+    const CHAR_UUID    = '995e0002-c4d9-4154-8b60-ab9747017a4f';
 
     /* Write a status line under the title. */
     function setStatus(text) {
@@ -188,8 +192,58 @@
       setStatus('Demo (dati simulati)');
     }
 
+    /* Decode the 16-byte payload (4 little-endian floats) and show it. */
+    function showPayload(dv) {
+      const v   = dv.getFloat32(0,  true);
+      const i   = dv.getFloat32(4,  true);
+      const p   = dv.getFloat32(8,  true);
+      const dac = dv.getFloat32(12, true);
+      showSample(v, i, p, dac);
+    }
+
+    /* Called by the browser on every notification from the ESP32. */
+    function onData(event) {
+      showPayload(event.target.value);
+    }
+
+    /* Called by the browser when the connection is lost. */
+    function onDisconnected() {
+      setStatus('Disconnesso');
+    }
+
+    /* Connect to the ESP32, read the current value, subscribe to notifications. */
+    async function connectBle() {
+      if (!navigator.bluetooth) {
+        setStatus('Bluetooth non disponibile: usa Chrome (PC/Android) o Bluefy (iPhone)');
+        return;
+      }
+      if (demoTimer !== null) toggleDemo();     // stop the demo: real data is coming
+
+      try {
+        setStatus('Ricerca...');
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [SERVICE_UUID] }]
+        });
+        device.addEventListener('gattserverdisconnected', onDisconnected);
+
+        setStatus('Connessione a ' + device.name + '...');
+        const server  = await device.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        const ch      = await service.getCharacteristic(CHAR_UUID);
+
+        showPayload(await ch.readValue());      // show the current value right away (READ)
+
+        ch.addEventListener('characteristicvaluechanged', onData);
+        await ch.startNotifications();          // writes 01 00 into the CCCD
+        setStatus('Connesso a ' + device.name);
+      } catch (err) {
+        setStatus('Errore: ' + err.message);
+      }
+    }
+
     // ---- Wire the buttons to the functions ----
     document.getElementById('btnDemo').addEventListener('click', toggleDemo);
+    document.getElementById('btnConnect').addEventListener('click', connectBle);
   </script>
 </body>
 </html>
