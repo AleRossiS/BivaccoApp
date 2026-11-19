@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bivacco</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#10141a">
+  <link rel="apple-touch-icon" href="icon-192.png">
 
   <style>
     /* Color palette: change it here, it updates everywhere */
@@ -246,6 +249,11 @@
     // ---- Wire the buttons to the functions ----
     document.getElementById('btnDemo').addEventListener('click', toggleDemo);
     document.getElementById('btnConnect').addEventListener('click', connectBle);
+
+    // ---- Offline support: register the service worker ----
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
   </script>
 </body>
 </html>
