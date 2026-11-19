@@ -100,17 +100,62 @@
   </div>
   
   <script>
+        // ---- Chart history ----
+    const N_POINTS = 60;     // points kept: 60 x 2 s = 2 minutes
+    const history = [];      // last N_POINTS power values [mW]
+
     /* Write a status line under the title. */
     function setStatus(text) {
       document.getElementById('status').textContent = text;
     }
 
-    /* Show one sample in the 4 cards. Single entry point for both demo and BLE data. */
+    /* Show one sample in the 4 cards and add it to the chart. */
     function showSample(v, i, p, dac) {
       document.getElementById('v').textContent   = v.toFixed(3);
       document.getElementById('i').textContent   = i.toFixed(1);
       document.getElementById('p').textContent   = p.toFixed(2);
       document.getElementById('dac').textContent = dac.toFixed(0);
+
+      history.push(p);                      // add the newest value at the end
+      if (history.length > N_POINTS) {
+        history.shift();                    // drop the oldest (first) one
+      }
+      drawChart();
+    }
+
+    /* Draw history[] as a line on the canvas, P axis from 0 to the max. */
+    function drawChart() {
+      const canvas = document.getElementById('chart');
+      const ctx = canvas.getContext('2d');
+
+      // Match the drawing resolution to the real screen pixels (sharp on iPhone)
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      canvas.width  = w * dpr;              // this also clears the canvas
+      canvas.height = h * dpr;
+      ctx.scale(dpr, dpr);                  // from now on, draw in CSS pixels
+
+      if (history.length < 2) return;       // a line needs at least 2 points
+
+      const pMax = Math.max(...history) * 1.1;   // 10% headroom on top
+
+      // Line
+      ctx.beginPath();
+      for (let k = 0; k < history.length; k++) {
+        const x = k / (N_POINTS - 1) * w;
+        const y = h - history[k] / pMax * h;
+        if (k === 0) ctx.moveTo(x, y);
+        else         ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = '#f5a623';          // same as --acc
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Scale label
+      ctx.fillStyle = '#8a96a6';            // same as --muted
+      ctx.font = '12px system-ui';
+      ctx.fillText('max ' + Math.max(...history).toFixed(1) + ' mW', 4, 12);
     }
 
     // ---- Demo mode: fake data from the Thevenin model of the test rig ----
