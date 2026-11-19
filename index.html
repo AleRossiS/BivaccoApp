@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -64,21 +64,21 @@
   </style>
 </head>
 <body>
-  <h1>Bivacco – energia</h1>
-  <p id="status">Non connesso</p>
+  <h1>Bivacco – Energy</h1>
+  <p id="status">Not connected</p>
 
   <!-- The 4 value cards -->
   <div class="grid">
     <div class="card">
-      <div class="label">Potenza</div>
+      <div class="label">Power</div>
       <span class="value" id="p">–</span> <span class="unit">mW</span>
     </div>
     <div class="card">
-      <div class="label">Tensione</div>
+      <div class="label">Voltage</div>
       <span class="value" id="v">–</span> <span class="unit">V</span>
     </div>
     <div class="card">
-      <div class="label">Corrente</div>
+      <div class="label">Current</div>
       <span class="value" id="i">–</span> <span class="unit">mA</span>
     </div>
     <div class="card">
@@ -89,16 +89,16 @@
 
   <!-- Power chart -->
   <div class="card">
-    <div class="label">Potenza nel tempo</div>
+    <div class="label">Power over time</div>
     <canvas id="chart"></canvas>
   </div>
 
   <!-- Buttons -->
   <div class="buttons">
-    <button id="btnConnect">Connetti</button>
+    <button id="btnConnect">Connect</button>
     <button id="btnDemo" class="secondary">Demo</button>
   </div>
-  
+
   <script>
     // ---- Chart history ----
     const N_POINTS = 60;     // points kept: 60 x 2 s = 2 minutes
@@ -120,9 +120,11 @@
       document.getElementById('p').textContent   = p.toFixed(2);
       document.getElementById('dac').textContent = dac.toFixed(0);
 
-      history.push(p);                      // add the newest value at the end
-      if (history.length > N_POINTS) {
-        history.shift();                    // drop the oldest (first) one
+      if (Number.isFinite(p)) {             // skip invalid readings (NaN from the INA)
+        history.push(p);                    // add the newest value at the end
+        if (history.length > N_POINTS) {
+          history.shift();                  // drop the oldest (first) one
+        }
       }
       drawChart();
     }
@@ -142,7 +144,7 @@
 
       if (history.length < 2) return;       // a line needs at least 2 points
 
-      const pMax = Math.max(...history) * 1.1;   // 10% headroom on top
+      const pMax = Math.max(...history, 1) * 1.1;   // at least 1 mW full scale: avoids 0/0
 
       // Line
       ctx.beginPath();
@@ -183,13 +185,13 @@
         clearInterval(demoTimer);
         demoTimer = null;
         btn.textContent = 'Demo';
-        setStatus('Non connesso');
+        setStatus('Not connected');
         return;
       }
       demoTimer = setInterval(demoSample, 2000);   // call demoSample every 2 s
       demoSample();                                // first sample right away
       btn.textContent = 'Stop demo';
-      setStatus('Demo (dati simulati)');
+      setStatus('Demo (simulated data)');
     }
 
     /* Decode the 16-byte payload (4 little-endian floats) and show it. */
@@ -208,25 +210,25 @@
 
     /* Called by the browser when the connection is lost. */
     function onDisconnected() {
-      setStatus('Disconnesso');
+      setStatus('Disconnected');
     }
 
     /* Connect to the ESP32, read the current value, subscribe to notifications. */
     async function connectBle() {
       if (!navigator.bluetooth) {
-        setStatus('Bluetooth non disponibile: usa Chrome (PC/Android) o Bluefy (iPhone)');
+        setStatus('Bluetooth not available: use Chrome (PC/Android) or Bluefy (iPhone)');
         return;
       }
       if (demoTimer !== null) toggleDemo();     // stop the demo: real data is coming
 
       try {
-        setStatus('Ricerca...');
+        setStatus('Searching...');
         const device = await navigator.bluetooth.requestDevice({
           filters: [{ services: [SERVICE_UUID] }]
         });
         device.addEventListener('gattserverdisconnected', onDisconnected);
 
-        setStatus('Connessione a ' + device.name + '...');
+        setStatus('Connecting to ' + device.name + '...');
         const server  = await device.gatt.connect();
         const service = await server.getPrimaryService(SERVICE_UUID);
         const ch      = await service.getCharacteristic(CHAR_UUID);
@@ -235,9 +237,9 @@
 
         ch.addEventListener('characteristicvaluechanged', onData);
         await ch.startNotifications();          // writes 01 00 into the CCCD
-        setStatus('Connesso a ' + device.name);
+        setStatus('Connected to ' + device.name);
       } catch (err) {
-        setStatus('Errore: ' + err.message);
+        setStatus('Error: ' + err.message);
       }
     }
 
