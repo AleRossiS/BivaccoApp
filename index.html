@@ -98,5 +98,53 @@
     <button id="btnConnect">Connetti</button>
     <button id="btnDemo" class="secondary">Demo</button>
   </div>
+  
+  <script>
+    /* Write a status line under the title. */
+    function setStatus(text) {
+      document.getElementById('status').textContent = text;
+    }
+
+    /* Show one sample in the 4 cards. Single entry point for both demo and BLE data. */
+    function showSample(v, i, p, dac) {
+      document.getElementById('v').textContent   = v.toFixed(3);
+      document.getElementById('i').textContent   = i.toFixed(1);
+      document.getElementById('p').textContent   = p.toFixed(2);
+      document.getElementById('dac').textContent = dac.toFixed(0);
+    }
+
+    // ---- Demo mode: fake data from the Thevenin model of the test rig ----
+    const V0 = 2.07;    // [V]   open-circuit voltage
+    const R  = 50.4;    // [ohm] internal resistance
+    let demoTimer = null;   // id of the running timer, null = demo off
+
+    /* One fake sample: DAC wanders around the MPP like P&O does, V and I follow the model. */
+    function demoSample() {
+      const dac = 72 + 2 * Math.floor(Math.random() * 4);              // 72, 74, 76 or 78
+      const i = 19.5 + 0.8 * (dac - 74) + (Math.random() - 0.5) * 0.2; // [mA]
+      const v = V0 - R * i / 1000;                                     // [V]
+      const p = v * i;                                                 // [mW]
+      showSample(v, i, p, dac);
+    }
+
+    /* Start/stop the demo (called when the Demo button is pressed). */
+    function toggleDemo() {
+      const btn = document.getElementById('btnDemo');
+      if (demoTimer !== null) {          // demo running -> stop it
+        clearInterval(demoTimer);
+        demoTimer = null;
+        btn.textContent = 'Demo';
+        setStatus('Non connesso');
+        return;
+      }
+      demoTimer = setInterval(demoSample, 2000);   // call demoSample every 2 s
+      demoSample();                                // first sample right away
+      btn.textContent = 'Stop demo';
+      setStatus('Demo (dati simulati)');
+    }
+
+    // ---- Wire the buttons to the functions ----
+    document.getElementById('btnDemo').addEventListener('click', toggleDemo);
+  </script>
 </body>
 </html>
