@@ -1,12 +1,36 @@
-<!doctype html>
-<html lang="it">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bivacco</title>
-</head>
 <body>
   <h1>Bivacco – energia</h1>
   <p id="status">Non connesso</p>
+
+  <!-- The 4 value cards -->
+  <div class="grid">
+    <div class="card">
+      <div class="label">Potenza</div>
+      <span class="value" id="p">–</span> <span class="unit">mW</span>
+    </div>
+    <div class="card">
+      <div class="label">Tensione</div>
+      <span class="value" id="v">–</span> <span class="unit">V</span>
+    </div>
+    <div class="card">
+      <div class="label">Corrente</div>
+      <span class="value" id="i">–</span> <span class="unit">mA</span>
+    </div>
+    <div class="card">
+      <div class="label">DAC</div>
+      <span class="value" id="dac">–</span>
+    </div>
+  </div>
+
+  <!-- Power chart -->
+  <div class="card">
+    <div class="label">Potenza nel tempo</div>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <!-- Buttons -->
+  <div class="buttons">
+    <button id="btnConnect">Connetti</button>
+    <button id="btnDemo" class="secondary">Demo</button>
+  </div>
 </body>
-</html>
